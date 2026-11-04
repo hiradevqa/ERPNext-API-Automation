@@ -1,0 +1,1915 @@
+{
+  "info": {
+    "_postman_id": "2786ab1f-c7e5-4689-92f8-a0446cc49cd5",
+    "name": "ERPNext Backend API Automation",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "58680672",
+    "_collection_link": "https://go.postman.co/collection/58680672-2786ab1f-c7e5-4689-92f8-a0446cc49cd5?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "AUTH-API-01 — Valid Login",
+          "item": [
+            {
+              "name": "Login with Valid Credentials",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response= pm.response.json();\r\npm.test(\"Verify status code 200\",()=>{\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"verify message\",()=>{\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"usr\":\"{{email}}\",\r\n    \"pwd\":\"{{password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/method/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Authenticated Session",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Authenticated user is correct\", function () {\r\n    pm.expect(response.message).to.eql(\r\n        pm.environment.get(\"email\")\r\n    );\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "frappe.auth.get_logged_user"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "AUTH-API-02 — Invalid Password",
+          "item": [
+            {
+              "name": "Login with Invalid Password",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\npm.test(\"status code\",()=>{\r\n\r\npm.response.to.have.status(401);\r\n})\r\n\r\npm.test(\"error message\",()=>{\r\n    pm.expect(response.message).to.eql(\"Invalid login credentials\");\r\n})"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst jar = pm.cookies.jar();\r\nconst baseUrl = pm.environment.get(\"base_url\");\r\n\r\nawait new Promise((resolve, reject) => {\r\n    jar.unset(baseUrl, \"sid\", error => {\r\n        if (error) reject(error);\r\n        else resolve();\r\n    });\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n\"usr\":\"{{email}}\",\r\n\"pwd\":\"{{invalid_password}}\"\r\n\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/method/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify No Authenticated Session",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Protected API denies access\", () => {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"No customer data returned\", () => {\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "AUTH-API-03 — Unauthenticated Access",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"verify status\",()=>{\r\npm.response.to.have.status(403);\r\n})\r\npm.test(\"Verify permission error\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n});\r\npm.test(\"verify data\",()=>{\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n})"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AUTH-API-04 — Role-Based Authorization",
+      "item": [
+        {
+          "name": "Login as Restricted User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Restricted user login succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Login message is correct\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": false
+          },
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n\"usr\":\"{{restricted_username}}\",\r\n\"pwd\":\"{{password}}\"\r\n\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/method/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Restricted User Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\npm.test(\"verify status\",()=>{\r\npm.response.to.have.status(200);\r\n})\r\n\r\npm.expect(response.message).to.eql(\r\n    pm.environment.get(\"restricted_username\")\r\n);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "frappe.auth.get_logged_user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Attempt Customer Creation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\npm.test(\"status code\",()=>{\r\n\r\npm.response.to.have.status(403);\r\n})\r\n\r\npm.test(\"error message\",()=>{\r\npm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n})\r\n\r\npm.test(\"verify data\",()=>{\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n})"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_name\": \"QA Test Customer\",\r\n  \"customer_type\": \"Company\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup - Clear Restricted Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Restricted user logout succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/method/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AUTH-API-05 — Verify logout invalidates session",
+      "item": [
+        {
+          "name": "Valid Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify login status\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify login message\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"usr\": \"{{email}}\",\r\n  \"pwd\": \"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/method/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Authenticated User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify status code\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify logged in user\", () => {\r\n    pm.expect(response.message).to.eql(pm.environment.get(\"email\"));\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "frappe.auth.get_logged_user"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Verify logout status\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/method/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "method",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Access Protected Customer API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify protected request is denied\", () => {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"Verify permission error\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Customer",
+      "item": [
+        {
+          "name": "CUS-API-04 — Update",
+          "item": [
+            {
+              "name": "Update customer name",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\npm.test(\"Verify status code\",()=>{\r\npm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify response body\", () => {\r\n    \r\npm.expect(response.data).to.be.an(\"object\");\r\n\r\npm.expect(response.data.name).to.equal(pm.environment.get(\"customerId\"));\r\n\r\npm.expect(response.data.customer_name).to.equal(pm.environment.get(\"updatedCustomerName\"));\r\n\r\npm.expect(response.data.customer_type).to.eql(\"Company\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const newName = `Updated Name-${Date.now()}`;\r\n\r\npm.environment.set(\"updatedCustomerName\", newName);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"customer_name\":\"{{updatedCustomerName}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer/{{customerId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET Retrieve Updated Customer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Updated Customer details are saved\", () => {\r\n    pm.expect(response.data.name).to.eql(\r\n        pm.environment.get(\"customerId\")\r\n    );\r\n\r\n    pm.expect(response.data.customer_name).to.eql(\r\n        pm.environment.get(\"updatedCustomerName\")\r\n    );\r\n\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer/{{customerId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "CUS-API-06 — Pagination",
+          "item": [
+            {
+              "name": "Page 1 (Records 1–10)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 1\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\nconst page1Ids = response.data.map(customer => customer.name);\r\n\r\npm.environment.set(\"page1Ids\", JSON.stringify(page1Ids));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst prefix = \"QA-PAGE-\" + Date.now() + \"-\";\r\n\r\npm.environment.set(\"paginationPrefix\", prefix);\r\n\r\n// Get existing test Customer IDs\r\nconst ids = JSON.parse(\r\n    pm.environment.get(\"testCustomerIds\") || \"[]\"\r\n);\r\n\r\n// Create 20 temporary Customers\r\nfor (let i = 1; i <= 20; i++) {\r\n\r\n    const customerName = prefix + i;\r\n\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Customer\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                customer_name: customerName,\r\n                customer_type: \"Company\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Stop if Customer creation failed\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Failed to create Customer \" + i);\r\n    }\r\n\r\n    // Save each Customer ID for cleanup\r\n    ids.push(response.json().data.name);\r\n\r\n    pm.environment.set(\r\n        \"testCustomerIds\",\r\n        JSON.stringify(ids)\r\n    );\r\n}\r\n\r\nconsole.log(\"Created 20 pagination Customers\");\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer?limit_start=0&limit_page_length=10&order_by=name asc&filters=[[\"Customer\",\"customer_name\",\"like\",\"{{paginationPrefix}}%\"]]",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit_start",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit_page_length",
+                      "value": "10"
+                    },
+                    {
+                      "key": "order_by",
+                      "value": "name asc"
+                    },
+                    {
+                      "key": "filters",
+                      "value": "[[\"Customer\",\"customer_name\",\"like\",\"{{paginationPrefix}}%\"]]"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Page 2 (Records 11–20)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 2\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\nconst page2Ids = response.data.map(customer => customer.name);\r\n\r\nconst page1Ids = JSON.parse(pm.environment.get(\"page1Ids\"));\r\n\r\npm.test(\"Verify no overlapping Customers\", () => {\r\n    const duplicates = page2Ids.filter(id => page1Ids.includes(id));\r\n\r\n    pm.expect(duplicates).to.be.empty;\r\n});\r\n\r\npm.test(\"Page 2 is sorted by Customer ID\", () => {\r\n    const sortedIds = [...page2Ids].sort();\r\n\r\n    pm.expect(page2Ids).to.eql(sortedIds);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer?limit_start=10&limit_page_length=10&order_by=name asc&filters=[[\"Customer\",\"customer_name\",\"like\",\"{{paginationPrefix}}%\"]]",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit_start",
+                      "value": "10"
+                    },
+                    {
+                      "key": "limit_page_length",
+                      "value": "10"
+                    },
+                    {
+                      "key": "order_by",
+                      "value": "name asc"
+                    },
+                    {
+                      "key": "filters",
+                      "value": "[[\"Customer\",\"customer_name\",\"like\",\"{{paginationPrefix}}%\"]]"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "CUS-API-07 — Delete",
+          "item": [
+            {
+              "name": "Delete Customer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Customer deleted successfully\", () => {\r\n    pm.response.to.have.status(202);\r\n    pm.expect(response.data).to.eql(\"ok\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer/{{customerId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Customer Is Deleted",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Verify Customer no longer exists\", () => {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Verify Customer not found error\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"DoesNotExistError\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer/{{customerId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer",
+                    "{{customerId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "auth": {
+            "type": "apikey",
+            "apikey": [
+              {
+                "key": "key",
+                "value": "Authorization",
+                "type": "string"
+              },
+              {
+                "key": "value",
+                "value": "token {{api_key}}:{{api_secret}}",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        {
+          "name": "CUS-API-01 — Create",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Customer created with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    // Verify generated document ID\r\n    pm.expect(response.data.name).to.be.a(\"string\").and.not.empty;\r\n\r\n    // Verify Customer name\r\n    const expectedName = pm.environment.get(\"custName\");\r\n    pm.expect(response.data.customer_name).to.eql(expectedName);\r\n\r\n    // Verify Customer type\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n\r\n    // Verify DocType\r\n    pm.expect(response.data.doctype).to.eql(\"Customer\");\r\n});\r\n\r\n// Save ID only when the response is successful\r\nif (pm.response.code === 200 && response.data?.name) {\r\n    pm.environment.set(\"createdCustomerId\", response.data.name);\r\n\r\n    const ids = JSON.parse(pm.environment.get(\"testCustomerIds\") || \"[]\");\r\n    ids.push(response.data.name);\r\n    pm.environment.set(\"testCustomerIds\", JSON.stringify(ids));\r\n\r\n} else {\r\n    pm.environment.unset(\"createdCustomerId\");\r\n}\r\n\r\n"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst customerName = `QA-Company-${Date.now()}`;\r\n\r\npm.environment.set(\"custName\", customerName);\r\npm.environment.unset(\"createdCustomerId\");"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_name\": \"{{custName}}\",\r\n  \"customer_type\": \"Company\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CUS-API-02 — Mandatory Validation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Response status code is 417\",()=>{\r\n    pm.response.to.have.status(417);\r\n})\r\n\r\npm.test(\"No Customer created\", () => {\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n});\r\n\r\npm.test(\"Response body contains exception message\", () => {\r\npm.expect(response.exc_type).to.eql(\"MandatoryError\");\r\npm.expect(response.exception).to.include(\"customer_name\");\r\n\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"customer_name\": \"\",\r\n  \"customer_type\": \"Company\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CUS-API-03 — Retrieve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Customer exists with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    // Compare returned document ID with saved ID\r\n    const expectedId = pm.environment.get(\"customerId\");\r\n    pm.expect(response.data.name).to.eql(expectedId);\r\n\r\n    // Compare Customer name with original test data\r\n    const expectedName = pm.environment.get(\"custName\");\r\n    pm.expect(response.data.customer_name).to.eql(expectedName);\r\n\r\n    // Verify Customer type\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n\r\n    // Verify DocType\r\n    pm.expect(response.data.doctype).to.eql(\"Customer\");\r\n});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  ""
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer/{{customerId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CUS-API-05 — Search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Search returns the correct Customer\", () => {\r\n    const customerId = pm.environment.get(\"customerId\");\r\n    const customerName = pm.environment.get(\"custName\");\r\n\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(1);\r\n\r\n    pm.expect(response.data[0].name).to.eql(customerId);\r\n    pm.expect(response.data[0].customer_name).to.eql(customerName);\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer?filters=[[\"Customer\", \"customer_name\", \"=\", \"{{custName}}\"]]&fields=[\"name\",\"customer_name\"]",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[[\"Customer\", \"customer_name\", \"=\", \"{{custName}}\"]]"
+                },
+                {
+                  "key": "fields",
+                  "value": "[\"name\",\"customer_name\"]"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CUS-API-08 — Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Verify status code\", () => {\r\n    pm.response.to.have.status(404);\r\n});\r\n\r\npm.test(\"Verify Customer does not exist\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"DoesNotExistError\");\r\n});\r\n\r\npm.test(\"No Customer data returned\", () => {\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer/QA-Customer-DoesNotExist-999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer",
+                "QA-Customer-DoesNotExist-999999"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "key",
+            "value": "Authorization",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "value": "token {{api_key}}:{{api_secret}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "\r\nif (\r\n    pm.info.requestName === \"CUS-API-03 — Retrieve\" ||\r\n    pm.info.requestName === \"Update customer name\" ||\r\n    pm.info.requestName === \"CUS-API-05 — Search\" ||\r\n    pm.info.requestName === \"Delete Customer\"\r\n) {\r\n\r\n    // Generate a unique Customer name\r\n    const customerName = `QA-Company-${Date.now()}`;\r\n\r\n    // Create a Customer\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Customer\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                customer_name: customerName,\r\n                customer_type: \"Company\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Stop if Customer creation fails\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Customer setup failed\");\r\n    }\r\n\r\n    // Save Customer details\r\n    const customerId = response.json().data.name;\r\n\r\n    pm.environment.set(\"customerId\", customerId);\r\n    pm.environment.set(\"custName\", customerName);\r\n\r\n    // Add Customer to cleanup list\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testCustomerIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(customerId);\r\n\r\n    pm.environment.set(\"testCustomerIds\", JSON.stringify(ids));\r\n}\r\n"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Item",
+      "item": [
+        {
+          "name": "ITEM-API-03 — Duplicate Item Code",
+          "item": [
+            {
+              "name": "Create Original Item",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst itemCode = \"QA-DUP-\" + Date.now();\r\n\r\npm.environment.set(\"duplicateItemCode\", itemCode);\r\npm.environment.unset(\"duplicateItemId\");\r\n"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Original Item created successfully\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Original Item has correct details\", () => {\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"duplicateItemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.item_name).to.eql(\"QA Original Item\");\r\n    pm.expect(response.data.item_group).to.eql(\"Products\");\r\n    pm.expect(response.data.is_stock_item).to.eql(1);\r\n});\r\n\r\n// Save Item ID and track it for cleanup\r\nif (pm.response.code === 200 && response.data?.name) {\r\n\r\n    pm.environment.set(\"duplicateItemId\", response.data.name);\r\n\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testItemIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(response.data.name);\r\n\r\n    pm.environment.set(\"testItemIds\", JSON.stringify(ids));\r\n}\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"item_code\": \"{{duplicateItemCode}}\",\r\n  \"item_name\": \"QA Original Item\",\r\n  \"item_group\": \"Products\",\r\n  \"is_stock_item\": 1,\r\n  \"stock_uom\": \"Nos\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Item",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Item"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Attempt Duplicate Item",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 409\", () => {\r\n    pm.response.to.have.status(409);\r\n});\r\n\r\npm.test(\"Duplicate Item Code is rejected\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"DuplicateEntryError\");\r\n\r\n    pm.expect(response.exception).to.include(\r\n        pm.environment.get(\"duplicateItemCode\")\r\n    );\r\n});\r\n\r\npm.test(\"No new Item returned\", () => {\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "\r\n{\r\n    \"item_code\": \"{{duplicateItemCode}}\",\r\n    \"item_name\": \"QA Duplicate Attempt\",\r\n    \"item_group\": \"Products\",\r\n    \"is_stock_item\": 1,\r\n    \"stock_uom\": \"Nos\"\r\n}\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Item",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Item"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Original Item",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Original Item is unchanged\", () => {\r\n    pm.expect(response.data.name).to.eql(\r\n        pm.environment.get(\"duplicateItemId\")\r\n    );\r\n\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"duplicateItemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.item_name).to.eql(\"QA Original Item\");\r\n    pm.expect(response.data.item_group).to.eql(\"Products\");\r\n    pm.expect(response.data.is_stock_item).to.eql(1);\r\n    pm.expect(response.data.stock_uom).to.eql(\"Nos\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Item/{{duplicateItemId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Item",
+                    "{{duplicateItemId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "ITEM-API-05 — Update Description",
+          "item": [
+            {
+              "name": "Update Item Description",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst newDescription = \"Updated QA Description \" + Date.now();\r\n\r\npm.environment.set(\"updatedItemDescription\", newDescription);\r\n"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Item description updated\", () => {\r\n\r\n    pm.expect(response.data.name).to.eql(\r\n        pm.environment.get(\"itemId\")\r\n    );\r\n\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"setupItemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.description).to.eql(\r\n        pm.environment.get(\"updatedItemDescription\")\r\n    );\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "\r\n{\r\n    \"description\": \"{{updatedItemDescription}}\"\r\n}\r\n",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Item/{{itemId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Item",
+                    "{{itemId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Updated Description",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Updated description is saved\", () => {\r\n\r\n    pm.expect(response.data.name).to.eql(\r\n        pm.environment.get(\"itemId\")\r\n    );\r\n\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"setupItemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.description).to.eql(\r\n        pm.environment.get(\"updatedItemDescription\")\r\n    );\r\n\r\n    pm.expect(response.data.item_name).to.eql(\"QA Setup Item\");\r\n});\r\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Item/{{itemId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Item",
+                    "{{itemId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "ITEM-API-01 — Create Stock Item",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst itemCode = \"QA-ITEM-\" + Date.now();\r\n\r\npm.environment.set(\"itemCode\", itemCode);\r\npm.environment.unset(\"createdItemId\");\r\n"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Item created with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"itemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.item_name).to.eql(\"QA Test Stock Item\");\r\n\r\n    pm.expect(response.data.item_group).to.eql(\"Products\");\r\n\r\n    pm.expect(response.data.is_stock_item).to.eql(1);\r\n\r\n    pm.expect(response.data.stock_uom).to.eql(\"Nos\");\r\n});\r\n\r\n\r\nif (pm.response.code === 200 && response.data?.name) {\r\n\r\n    pm.environment.set(\"createdItemId\", response.data.name);\r\n\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testItemIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(response.data.name);\r\n\r\n    pm.environment.set(\"testItemIds\", JSON.stringify(ids));\r\n}\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n  \"item_code\": \"{{itemCode}}\",\r\n  \"item_name\": \"QA Test Stock Item\",\r\n  \"item_group\": \"Products\",\r\n  \"is_stock_item\": 1,\r\n  \"stock_uom\": \"Nos\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ITEM-API-02 — Missing Item Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 417\", () => {\r\n    pm.response.to.have.status(417);\r\n});\r\n\r\npm.test(\"Item Code is required\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"ValidationError\");\r\n\r\n    pm.expect(response.exception).to.include(\"Item Code is required\");\r\n});\r\n\r\npm.test(\"No Item created\", () => {\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "\r\n{\r\n    \"item_name\": \"QA Missing Code Test\",\r\n    \"item_group\": \"Products\",\r\n    \"is_stock_item\": 1,\r\n    \"stock_uom\": \"Nos\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ITEM-API-04 — Retrieve Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Item retrieved with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    pm.expect(response.data.name).to.eql(\r\n        pm.environment.get(\"itemId\")\r\n    );\r\n\r\n    pm.expect(response.data.item_code).to.eql(\r\n        pm.environment.get(\"setupItemCode\")\r\n    );\r\n\r\n    pm.expect(response.data.item_name).to.eql(\"QA Setup Item\");\r\n    pm.expect(response.data.item_group).to.eql(\"Products\");\r\n    pm.expect(response.data.is_stock_item).to.eql(1);\r\n    pm.expect(response.data.stock_uom).to.eql(\"Nos\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item/{{itemId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item",
+                "{{itemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ITEM-API-06 — Verify Item Response Schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Item response has required fields\", () => {\r\n\r\n    pm.expect(response.data).to.have.property(\"name\");\r\n    pm.expect(response.data).to.have.property(\"item_code\");\r\n    pm.expect(response.data).to.have.property(\"item_name\");\r\n    pm.expect(response.data).to.have.property(\"item_group\");\r\n    pm.expect(response.data).to.have.property(\"stock_uom\");\r\n    pm.expect(response.data).to.have.property(\"is_stock_item\");\r\n    pm.expect(response.data).to.have.property(\"doctype\");\r\n});\r\n\r\npm.test(\"Item fields have correct data types\", () => {\r\n\r\n    pm.expect(response.data.name).to.be.a(\"string\");\r\n    pm.expect(response.data.item_code).to.be.a(\"string\");\r\n    pm.expect(response.data.item_name).to.be.a(\"string\");\r\n    pm.expect(response.data.item_group).to.be.a(\"string\");\r\n    pm.expect(response.data.stock_uom).to.be.a(\"string\");\r\n    pm.expect(response.data.is_stock_item).to.be.a(\"number\");\r\n    pm.expect(response.data.doctype).to.be.a(\"string\");\r\n});\r\n\r\npm.test(\"Document type is Item\", () => {\r\n    pm.expect(response.data.doctype).to.eql(\"Item\");\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item/{{itemId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item",
+                "{{itemId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ITEM-API-07 — Filter Items by Item Group",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Items are returned\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data.length).to.be.above(0);\r\n});\r\n\r\npm.test(\"All Items belong to Products group\", () => {\r\n\r\n    for (const item of response.data) {\r\n        pm.expect(item.item_group).to.eql(\"Products\");\r\n    }\r\n});\r\n\r\npm.test(\"Test Item is included in results\", () => {\r\n\r\n    const itemId = pm.environment.get(\"itemId\");\r\n\r\n    const itemFound = response.data.some(item => item.name === itemId);\r\n\r\n    pm.expect(itemFound).to.be.true;\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item?filters=[[\"Item\",\"item_group\",\"=\",\"Products\"]]&fields=[\"name\",\"item_code\",\"item_group\"]&limit_page_length=1000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item"
+              ],
+              "query": [
+                {
+                  "key": "filters",
+                  "value": "[[\"Item\",\"item_group\",\"=\",\"Products\"]]"
+                },
+                {
+                  "key": "fields",
+                  "value": "[\"name\",\"item_code\",\"item_group\"]"
+                },
+                {
+                  "key": "limit_page_length",
+                  "value": "1000"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "value",
+            "value": "token {{api_key}}:{{api_secret}}",
+            "type": "string"
+          },
+          {
+            "key": "key",
+            "value": "Authorization",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "\r\nif (\r\n    pm.info.requestName === \"ITEM-API-04 — Retrieve Item\" ||\r\n    pm.info.requestName === \"Update Item Description\" ||\r\n    pm.info.requestName === \"ITEM-API-06 — Response Schema\" ||\r\n    pm.info.requestName === \"ITEM-API-07 — Filter by Item Group\"\r\n) {\r\n\r\n    // Generate a unique Item Code\r\n    const itemCode = \"QA-ITEM-\" + Date.now();\r\n\r\n    pm.environment.unset(\"itemId\");\r\n\r\n    // Create an Item for the current test\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Item\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                item_code: itemCode,\r\n                item_name: \"QA Setup Item\",\r\n                item_group: \"Products\",\r\n                is_stock_item: 1,\r\n                stock_uom: \"Nos\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Check that Item creation succeeded\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Item setup failed\");\r\n    }\r\n\r\n    // Save details for this test\r\n    const itemId = response.json().data.name;\r\n\r\n    pm.environment.set(\"itemId\", itemId);\r\n    pm.environment.set(\"setupItemCode\", itemCode);\r\n\r\n    // Track this Item for cleanup\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testItemIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(itemId);\r\n\r\n    pm.environment.set(\"testItemIds\", JSON.stringify(ids));\r\n}\r\n"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Supplier",
+      "item": [
+        {
+          "name": "SUP-API-04 — Update Supplier",
+          "item": [
+            {
+              "name": "Update Supplier Details",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\nconst details = \"Updated QA Supplier Details \" + Date.now();\n\npm.environment.set(\"updatedSupplierDetails\", details);\n"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\nconst response = pm.response.json();\n\npm.test(\"Status code is 200\", () => {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Supplier details updated\", () => {\n\n    pm.expect(response.data.name).to.eql(\n        pm.environment.get(\"supplierId\")\n    );\n\n    pm.expect(response.data.supplier_name).to.eql(\n        pm.environment.get(\"supplierName\")\n    );\n\n    pm.expect(response.data.supplier_details).to.eql(\n        pm.environment.get(\"updatedSupplierDetails\")\n    );\n});\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "",
+                    "value": ""
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"supplier_details\": \"{{updatedSupplierDetails}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Supplier/{{supplierId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Supplier",
+                    "{{supplierId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Updated Supplier",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\nconst response = pm.response.json();\n\npm.test(\"Status code is 200\", () => {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Updated Supplier details are saved\", () => {\n\n    pm.expect(response.data.name).to.eql(\n        pm.environment.get(\"supplierId\")\n    );\n\n    pm.expect(response.data.supplier_details).to.eql(\n        pm.environment.get(\"updatedSupplierDetails\")\n    );\n\n    pm.expect(response.data.supplier_name).to.eql(\n        pm.environment.get(\"supplierName\")\n    );\n\n    pm.expect(response.data.supplier_group).to.eql(\"Services\");\n});\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Supplier/{{supplierId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Supplier",
+                    "{{supplierId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "SUP-API-05 — Delete Supplier",
+          "item": [
+            {
+              "name": "Delete Supplier",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\nconst response = pm.response.json();\n\npm.test(\"Supplier deleted successfully\", () => {\n\n    pm.response.to.have.status(202);\n\n    pm.expect(response.data).to.eql(\"ok\");\n});\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Supplier/{{supplierId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Supplier",
+                    "{{supplierId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Supplier Is Deleted",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "\nconst response = pm.response.json();\n\npm.test(\"Supplier no longer exists\", () => {\n    pm.response.to.have.status(404);\n});\n\npm.test(\"Supplier not found error\", () => {\n    pm.expect(response.exc_type).to.eql(\"DoesNotExistError\");\n});\n\npm.test(\"No Supplier data returned\", () => {\n    pm.expect(response).to.not.have.property(\"data\");\n});\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Supplier/{{supplierId}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Supplier",
+                    "{{supplierId}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "SUP-API-01 — Create Supplier",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\nconst supplierName = \"QA-Supplier-\" + Date.now();\n\npm.environment.set(\"newSupplierName\", supplierName);\n\npm.environment.unset(\"createdSupplierId\");\n"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\nconst response = pm.response.json();\n\npm.test(\"Status code is 200\", () => {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Supplier created with correct details\", () => {\n\n    pm.expect(response.data.name).to.be.a(\"string\").and.not.empty;\n\n    pm.expect(response.data.supplier_name).to.eql(\n        pm.environment.get(\"newSupplierName\")\n    );\n\n    pm.expect(response.data.supplier_group).to.eql(\"Services\");\n    pm.expect(response.data.supplier_type).to.eql(\"Company\");\n    pm.expect(response.data.doctype).to.eql(\"Supplier\");\n});\n\n// Save Supplier for cleanup\nif (pm.response.code === 200 && response.data?.name) {\n\n    pm.environment.set(\"createdSupplierId\", response.data.name);\n\n    const ids = JSON.parse(\n        pm.environment.get(\"testSupplierIds\") || \"[]\"\n    );\n\n    ids.push(response.data.name);\n\n    pm.environment.set(\"testSupplierIds\", JSON.stringify(ids));\n}\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\n{\n    \"supplier_name\": \"{{newSupplierName}}\",\n    \"supplier_group\": \"Services\",\n    \"supplier_type\": \"Company\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Supplier",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Supplier"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SUP-API-02 — Missing Supplier Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\nconst response = pm.response.json();\n\n// Track an unexpected creation so it can be cleaned up\nif (pm.response.code === 200 && response.data?.name) {\n\n    const ids = JSON.parse(\n        pm.environment.get(\"testSupplierIds\") || \"[]\"\n    );\n\n    ids.push(response.data.name);\n\n    pm.environment.set(\"testSupplierIds\", JSON.stringify(ids));\n}\n\npm.test(\"Supplier creation is rejected\", () => {\n    pm.expect(pm.response.code).to.eql(417);\n});\n\npm.test(\"Mandatory Supplier Name validation\", () => {\n    pm.expect([\"MandatoryError\", \"ValidationError\"])\n        .to.include(response.exc_type);\n});\n\npm.test(\"No Supplier returned\", () => {\n    pm.expect(response).to.not.have.property(\"data\");\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "",
+                "value": "",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplier_group\": \"{{supplierGroup}}\",\n  \"supplier_type\": \"Company\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/resource/Supplier",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Supplier"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SUP-API-03 — Retrieve Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\nconst response = pm.response.json();\n\npm.test(\"Status code is 200\", () => {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Supplier retrieved with correct details\", () => {\n\n    pm.expect(response.data).to.be.an(\"object\");\n\n    pm.expect(response.data.name).to.eql(\n        pm.environment.get(\"supplierId\")\n    );\n\n    pm.expect(response.data.supplier_name).to.eql(\n        pm.environment.get(\"supplierName\")\n    );\n\n    pm.expect(response.data.supplier_group).to.eql(\"Services\");\n    pm.expect(response.data.supplier_type).to.eql(\"Company\");\n    pm.expect(response.data.doctype).to.eql(\"Supplier\");\n});\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Supplier/{{supplierId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Supplier",
+                "{{supplierId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "key",
+            "value": "Authorization",
+            "type": "string"
+          },
+          {
+            "key": "value",
+            "value": "token {{api_key}}:{{api_secret}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "\r\nif (\r\n    pm.info.requestName === \"SUP-API-03 — Retrieve Supplier\" ||\r\n    pm.info.requestName === \"Update Supplier Details\" ||\r\n    pm.info.requestName === \"Delete Supplier\"\r\n) {\r\n\r\n    // Generate a unique Supplier name\r\n    const supplierName = \"QA-Supplier-\" + Date.now();\r\n\r\n    pm.environment.unset(\"supplierId\");\r\n\r\n    // Create a Supplier automatically\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Supplier\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                supplier_name: supplierName,\r\n                supplier_group: \"Services\",\r\n                supplier_type: \"Company\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Stop if setup failed\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Supplier setup failed\");\r\n    }\r\n\r\n    const supplierId = response.json().data.name;\r\n\r\n    // Save Supplier details\r\n    pm.environment.set(\"supplierId\", supplierId);\r\n    pm.environment.set(\"supplierName\", supplierName);\r\n\r\n    // Track Supplier for cleanup\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testSupplierIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(supplierId);\r\n\r\n    pm.environment.set(\"testSupplierIds\", JSON.stringify(ids));\r\n}\r\n"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 - Cleanup",
+      "item": [
+        {
+          "name": "Cleanup — Test Customers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Cleanup request succeeded\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// Get the IDs of customers created during testing\r\nconst customerIds = JSON.parse(\r\n    pm.environment.get(\"testCustomerIds\") || \"[]\"\r\n);\r\n\r\nconst failedIds = [];\r\n\r\n// Delete each test customer\r\nfor (const id of customerIds) {\r\n\r\n    try {\r\n        const response = await pm.sendRequest({\r\n            url: pm.environment.get(\"base_url\") + \"/api/resource/Customer/\" + id,\r\n            method: \"DELETE\",\r\n            header: {\r\n                Authorization: \"token \" +\r\n                    pm.environment.get(\"api_key\") + \":\" +\r\n                    pm.environment.get(\"api_secret\")\r\n            }\r\n        });\r\n\r\n        if (![200, 202, 204, 404].includes(response.code)) {\r\n            failedIds.push(id);\r\n        }\r\n\r\n    } catch (error) {\r\n        failedIds.push(id);\r\n    }\r\n}\r\n\r\n// Keep only customers that could not be deleted\r\npm.environment.set(\"testCustomerIds\", JSON.stringify(failedIds));\r\n\r\npm.test(\"All test customers deleted\", () => {\r\n    pm.expect(failedIds).to.be.empty;\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "key",
+                  "value": "Authorization",
+                  "type": "string"
+                },
+                {
+                  "key": "value",
+                  "value": "token {{api_key}}:{{api_secret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Customer?limit_page_length=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Customer"
+              ],
+              "query": [
+                {
+                  "key": "limit_page_length",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup — Test Items",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Cleanup endpoint is available\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// Get Item IDs saved during testing\r\nconst ids = JSON.parse(\r\n    pm.environment.get(\"testItemIds\") || \"[]\"\r\n);\r\n\r\n// Remove duplicate IDs\r\nconst uniqueIds = [...new Set(ids)];\r\nconst remaining = [...uniqueIds];\r\n\r\n// Delete each test Item\r\nfor (const id of uniqueIds) {\r\n    try {\r\n        const url = pm.environment.get(\"base_url\")\r\n            + \"/api/resource/Item/\"\r\n            + encodeURIComponent(id);\r\n\r\n        const header = {\r\n            Authorization: \"token \"\r\n                + pm.environment.get(\"api_key\")\r\n                + \":\"\r\n                + pm.environment.get(\"api_secret\")\r\n        };\r\n\r\n        // Delete the Item\r\n        const deleted = await pm.sendRequest({\r\n            url: url,\r\n            method: \"DELETE\",\r\n            header: header\r\n        });\r\n\r\n        // Verify the Item no longer exists\r\n        const check = await pm.sendRequest({\r\n            url: url,\r\n            method: \"GET\",\r\n            header: header\r\n        });\r\n\r\n        if (\r\n            [200, 202, 204, 404].includes(deleted.code) &&\r\n            check.code === 404\r\n        ) {\r\n            remaining.splice(remaining.indexOf(id), 1);\r\n            console.log(\"Deleted Item:\", id);\r\n        } else {\r\n            console.log(\"Cleanup failed:\", id, deleted.code, check.code);\r\n        }\r\n\r\n    } catch (error) {\r\n        console.log(\"Error deleting Item:\", id, error.message);\r\n    }\r\n\r\n    // Save any IDs that still need cleanup\r\n    pm.environment.set(\r\n        \"testItemIds\",\r\n        JSON.stringify(remaining)\r\n    );\r\n}\r\n\r\npm.test(\"All Item test records removed\", () => {\r\n    pm.expect(remaining).to.be.empty;\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "token {{api_key}}:{{api_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "Authorization",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Item?limit_page_length=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Item"
+              ],
+              "query": [
+                {
+                  "key": "limit_page_length",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cleanup — Test Suppliers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "\r\npm.test(\"Cleanup request succeeded\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// Get Suppliers created by our tests\r\nconst supplierIds = JSON.parse(\r\n    pm.environment.get(\"testSupplierIds\") || \"[]\"\r\n);\r\n\r\nconst failedIds = [];\r\n\r\n// Delete each test Supplier\r\nfor (const id of supplierIds) {\r\n\r\n    try {\r\n        const response = await pm.sendRequest({\r\n            url: pm.environment.get(\"base_url\") +\r\n                \"/api/resource/Supplier/\" + encodeURIComponent(id),\r\n            method: \"DELETE\",\r\n            header: {\r\n                Authorization: \"token \" +\r\n                    pm.environment.get(\"api_key\") + \":\" +\r\n                    pm.environment.get(\"api_secret\")\r\n            }\r\n        });\r\n\r\n        if (\r\n            response.code !== 200 &&\r\n            response.code !== 202 &&\r\n            response.code !== 204 &&\r\n            response.code !== 404\r\n        ) {\r\n            failedIds.push(id);\r\n        }\r\n\r\n    } catch (error) {\r\n        failedIds.push(id);\r\n    }\r\n}\r\n\r\n// Keep Supplier IDs that still need cleanup\r\npm.environment.set(\r\n    \"testSupplierIds\",\r\n    JSON.stringify(failedIds)\r\n);\r\n\r\npm.test(\"All test Suppliers cleaned up\", () => {\r\n    pm.expect(failedIds).to.be.empty;\r\n});\r\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "token {{api_key}}:{{api_secret}}",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "Authorization",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resource/Supplier?limit_page_length=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "resource",
+                "Supplier"
+              ],
+              "query": [
+                {
+                  "key": "limit_page_length",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
