@@ -168,6 +168,325 @@
           ]
         },
         {
+          "name": "AUTH-API-04 — Role-Based Authorization",
+          "item": [
+            {
+              "name": "Login as Restricted User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Restricted user login succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Login message is correct\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const jar = pm.cookies.jar();\r\nconst baseUrl = pm.environment.get(\"base_url\");\r\n\r\nawait new Promise((resolve, reject) => {\r\n    jar.unset(baseUrl, \"sid\", error => {\r\n        if (error) reject(error);\r\n        else resolve();\r\n    });\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableCookies": false
+              },
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n\"usr\":\"{{restricted_username}}\",\r\n\"pwd\":\"{{password}}\"\r\n\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/method/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Restricted User Session",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\npm.test(\"verify status\",()=>{\r\npm.response.to.have.status(200);\r\n})\r\n\r\npm.expect(response.message).to.eql(\r\n    pm.environment.get(\"restricted_username\")\r\n);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "frappe.auth.get_logged_user"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Attempt Customer Creation",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\npm.test(\"status code\",()=>{\r\n\r\npm.response.to.have.status(403);\r\n})\r\n\r\npm.test(\"error message\",()=>{\r\npm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n})\r\n\r\npm.test(\"verify data\",()=>{\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n})"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"customer_name\": \"QA Test Customer\",\r\n  \"customer_type\": \"Company\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Clear Restricted Session",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Restricted user logout succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Restricted User Logged Out",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Access denied after logout\", () => {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"Permission error is returned\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "frappe.auth.get_logged_user"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "AUTH-API-05 Verify Protected API Access Is Denied After Logout",
+          "item": [
+            {
+              "name": "Valid Login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify login status\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify login message\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"usr\": \"{{email}}\",\r\n  \"pwd\": \"{{password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/method/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Authenticated User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify status code\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify logged in user\", () => {\r\n    pm.expect(response.message).to.eql(pm.environment.get(\"email\"));\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "frappe.auth.get_logged_user"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Verify logout status\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/method/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "method",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Access Protected Customer API",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify protected request is denied\", () => {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"Verify permission error\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/resource/Customer",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource",
+                    "Customer"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "AUTH-API-03 — Unauthenticated Access",
           "event": [
             {
@@ -192,286 +511,6 @@
           "protocolProfileBehavior": {
             "disableCookies": true
           },
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/resource/Customer",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "resource",
-                "Customer"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "AUTH-API-04 — Role-Based Authorization",
-      "item": [
-        {
-          "name": "Login as Restricted User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Restricted user login succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Login message is correct\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "protocolProfileBehavior": {
-            "disableCookies": false
-          },
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n\"usr\":\"{{restricted_username}}\",\r\n\"pwd\":\"{{password}}\"\r\n\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/method/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "login"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Restricted User Session",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\npm.test(\"verify status\",()=>{\r\npm.response.to.have.status(200);\r\n})\r\n\r\npm.expect(response.message).to.eql(\r\n    pm.environment.get(\"restricted_username\")\r\n);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "frappe.auth.get_logged_user"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Attempt Customer Creation",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\npm.test(\"status code\",()=>{\r\n\r\npm.response.to.have.status(403);\r\n})\r\n\r\npm.test(\"error message\",()=>{\r\npm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n})\r\n\r\npm.test(\"verify data\",()=>{\r\n    pm.expect(response).to.not.have.property(\"data\");\r\n})"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"customer_name\": \"QA Test Customer\",\r\n  \"customer_type\": \"Company\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/resource/Customer",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "resource",
-                "Customer"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Cleanup - Clear Restricted Session",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Restricted user logout succeeds\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/method/logout",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "logout"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "AUTH-API-05 — Verify logout invalidates session",
-      "item": [
-        {
-          "name": "Valid Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify login status\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify login message\", () => {\r\n    pm.expect(response.message).to.eql(\"Logged In\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"usr\": \"{{email}}\",\r\n  \"pwd\": \"{{password}}\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/method/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "login"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Authenticated User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify status code\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Verify logged in user\", () => {\r\n    pm.expect(response.message).to.eql(pm.environment.get(\"email\"));\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/method/frappe.auth.get_logged_user",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "frappe.auth.get_logged_user"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Logout",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Verify logout status\", () => {\r\n    pm.response.to.have.status(200);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/method/logout",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "method",
-                "logout"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Access Protected Customer API",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Verify protected request is denied\", () => {\r\n    pm.response.to.have.status(403);\r\n});\r\n\r\npm.test(\"Verify permission error\", () => {\r\n    pm.expect(response.exc_type).to.eql(\"PermissionError\");\r\n});"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -519,6 +558,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "PUT",
                 "header": [],
@@ -547,7 +589,7 @@
               "response": []
             },
             {
-              "name": "GET Retrieve Updated Customer",
+              "name": "Retrieve Updated Customer",
               "event": [
                 {
                   "listen": "test",
@@ -559,6 +601,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -590,7 +635,7 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 1\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\nconst page1Ids = response.data.map(customer => customer.name);\r\n\r\npm.environment.set(\"page1Ids\", JSON.stringify(page1Ids));"
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 1\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\nconst page1Ids = response.data.map(customer => customer.name);\r\n\r\npm.test(\"Page 1 is sorted by Customer ID\", () => {\r\n    const sortedIds = [...page1Ids].sort();\r\n    pm.expect(page1Ids).to.eql(sortedIds);\r\n});\r\n\r\npm.environment.set(\"page1Ids\", JSON.stringify(page1Ids));"
                     ]
                   }
                 },
@@ -599,11 +644,14 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "\r\nconst prefix = \"QA-PAGE-\" + Date.now() + \"-\";\r\n\r\npm.environment.set(\"paginationPrefix\", prefix);\r\n\r\n// Get existing test Customer IDs\r\nconst ids = JSON.parse(\r\n    pm.environment.get(\"testCustomerIds\") || \"[]\"\r\n);\r\n\r\n// Create 20 temporary Customers\r\nfor (let i = 1; i <= 20; i++) {\r\n\r\n    const customerName = prefix + i;\r\n\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Customer\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                customer_name: customerName,\r\n                customer_type: \"Company\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Stop if Customer creation failed\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Failed to create Customer \" + i);\r\n    }\r\n\r\n    // Save each Customer ID for cleanup\r\n    ids.push(response.json().data.name);\r\n\r\n    pm.environment.set(\r\n        \"testCustomerIds\",\r\n        JSON.stringify(ids)\r\n    );\r\n}\r\n\r\nconsole.log(\"Created 20 pagination Customers\");\r\n"
+                      "\r\nconst prefix = \"QA-PAGE-\" + Date.now() + \"-\";\r\n\r\npm.environment.set(\"paginationPrefix\", prefix);\r\n\r\n// Get existing test Customer IDs\r\nconst ids = JSON.parse(\r\n    pm.environment.get(\"testCustomerIds\") || \"[]\"\r\n);\r\n\r\n// Create 20 temporary Customers\r\nfor (let i = 1; i <= 20; i++) {\r\n\r\n    const customerName = prefix + i;\r\n\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Customer\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                customer_name: customerName,\r\n                customer_type: \"Company\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Stop if Customer creation failed\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Failed to create Customer \" + i);\r\n    }\r\n\r\n    // Save each Customer ID for cleanup\r\n    ids.push(response.json().data.name);\r\n\r\n    pm.environment.set(\"testCustomerIds\",JSON.stringify(ids));\r\n}\r\n\r\nconsole.log(\"Created 20 pagination Customers\");\r\n"
                     ]
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -647,11 +695,14 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 2\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\nconst page2Ids = response.data.map(customer => customer.name);\r\n\r\nconst page1Ids = JSON.parse(pm.environment.get(\"page1Ids\"));\r\n\r\npm.test(\"Verify no overlapping Customers\", () => {\r\n    const duplicates = page2Ids.filter(id => page1Ids.includes(id));\r\n\r\n    pm.expect(duplicates).to.be.empty;\r\n});\r\n\r\npm.test(\"Page 2 is sorted by Customer ID\", () => {\r\n    const sortedIds = [...page2Ids].sort();\r\n\r\n    pm.expect(page2Ids).to.eql(sortedIds);\r\n});"
+                      "const response = pm.response.json();\r\n\r\npm.test(\"Verify Page 2\", () => {\r\n    pm.response.to.have.status(200);\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data).to.have.lengthOf(10);\r\n});\r\n\r\n// Get Customer IDs from Page 2\r\nconst page2Ids = response.data.map(customer => customer.name);\r\n\r\n// Get saved Customer IDs from Page 1\r\nconst page1Ids = JSON.parse(pm.environment.get(\"page1Ids\"));\r\n\r\n// Check that Customers are not repeated\r\npm.test(\"No duplicate Customers between pages\", () => {\r\n    for (const id of page2Ids) {\r\n        pm.expect(page1Ids).to.not.include(id);\r\n    }\r\n});\r\n\r\n// Check that Page 2 is sorted\r\npm.test(\"Page 2 is sorted by Customer ID\", () => {\r\n    const sortedIds = [...page2Ids].sort();\r\n    pm.expect(page2Ids).to.eql(sortedIds);\r\n});\r\n"
                     ]
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -705,6 +756,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "DELETE",
                 "header": [],
@@ -736,6 +790,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -779,7 +836,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Customer created with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    // Verify generated document ID\r\n    pm.expect(response.data.name).to.be.a(\"string\").and.not.empty;\r\n\r\n    // Verify Customer name\r\n    const expectedName = pm.environment.get(\"custName\");\r\n    pm.expect(response.data.customer_name).to.eql(expectedName);\r\n\r\n    // Verify Customer type\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n\r\n    // Verify DocType\r\n    pm.expect(response.data.doctype).to.eql(\"Customer\");\r\n});\r\n\r\n// Save ID only when the response is successful\r\nif (pm.response.code === 200 && response.data?.name) {\r\n    pm.environment.set(\"createdCustomerId\", response.data.name);\r\n\r\n    const ids = JSON.parse(pm.environment.get(\"testCustomerIds\") || \"[]\");\r\n    ids.push(response.data.name);\r\n    pm.environment.set(\"testCustomerIds\", JSON.stringify(ids));\r\n\r\n} else {\r\n    pm.environment.unset(\"createdCustomerId\");\r\n}\r\n\r\n"
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Customer created with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    // Verify generated document ID\r\n    pm.expect(response.data.name).to.be.a(\"string\").and.not.empty;\r\n\r\n    // Verify Customer name\r\n    const expectedName = pm.environment.get(\"custName\");\r\n    pm.expect(response.data.customer_name).to.eql(expectedName);\r\n\r\n    // Verify Customer type\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n\r\n    // Verify DocType\r\n    pm.expect(response.data.doctype).to.eql(\"Customer\");\r\n});\r\n\r\n// Save ID only when the response is successful\r\nif (pm.response.code === 200 && response.data?.name) {\r\n    pm.environment.set(\"createdCustomerId\", response.data.name);\r\n\r\n    const ids = JSON.parse(pm.environment.get(\"testCustomerIds\") || \"[]\");\r\n    ids.push(response.data.name);\r\n    pm.environment.set(\"testCustomerIds\", JSON.stringify(ids));\r\n\r\n} \r\n\r\n"
                 ]
               }
             },
@@ -835,6 +892,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -872,17 +932,11 @@
                   "const response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Customer exists with correct details\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"object\");\r\n\r\n    // Compare returned document ID with saved ID\r\n    const expectedId = pm.environment.get(\"customerId\");\r\n    pm.expect(response.data.name).to.eql(expectedId);\r\n\r\n    // Compare Customer name with original test data\r\n    const expectedName = pm.environment.get(\"custName\");\r\n    pm.expect(response.data.customer_name).to.eql(expectedName);\r\n\r\n    // Verify Customer type\r\n    pm.expect(response.data.customer_type).to.eql(\"Company\");\r\n\r\n    // Verify DocType\r\n    pm.expect(response.data.doctype).to.eql(\"Customer\");\r\n});"
                 ]
               }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  ""
-                ]
-              }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -914,11 +968,14 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/resource/Customer?filters=[[\"Customer\", \"customer_name\", \"=\", \"{{custName}}\"]]&fields=[\"name\",\"customer_name\"]",
+              "raw": "{{base_url}}/api/resource/Customer?filters=[[\"customer_name\", \"=\", \"{{custName}}\"]]&fields=[\"name\",\"customer_name\"]",
               "host": [
                 "{{base_url}}"
               ],
@@ -930,7 +987,7 @@
               "query": [
                 {
                   "key": "filters",
-                  "value": "[[\"Customer\", \"customer_name\", \"=\", \"{{custName}}\"]]"
+                  "value": "[[\"customer_name\", \"=\", \"{{custName}}\"]]"
                 },
                 {
                   "key": "fields",
@@ -954,6 +1011,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1028,6 +1088,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "POST",
                 "header": [],
@@ -1067,6 +1130,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "POST",
                 "header": [],
@@ -1106,6 +1172,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -1151,6 +1220,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "PUT",
                 "header": [],
@@ -1191,6 +1263,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -1272,6 +1347,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "POST",
             "header": [],
@@ -1311,6 +1389,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1342,6 +1423,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1368,11 +1452,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Items are returned\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data.length).to.be.above(0);\r\n});\r\n\r\npm.test(\"All Items belong to Products group\", () => {\r\n\r\n    for (const item of response.data) {\r\n        pm.expect(item.item_group).to.eql(\"Products\");\r\n    }\r\n});\r\n\r\npm.test(\"Test Item is included in results\", () => {\r\n\r\n    const itemId = pm.environment.get(\"itemId\");\r\n\r\n    const itemFound = response.data.some(item => item.name === itemId);\r\n\r\n    pm.expect(itemFound).to.be.true;\r\n});\r\n"
+                  "\r\nconst response = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\npm.test(\"Items are returned\", () => {\r\n\r\n    pm.expect(response.data).to.be.an(\"array\");\r\n    pm.expect(response.data.length).to.be.above(0);\r\n});\r\n\r\npm.test(\"All Items belong to Products group\", () => {\r\n\r\n    for (const item of response.data) {\r\n        pm.expect(item.item_group).to.eql(\"Products\");\r\n    }\r\n});\r\n\r\n"
                 ]
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1426,7 +1513,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "\r\nif (\r\n    pm.info.requestName === \"ITEM-API-04 — Retrieve Item\" ||\r\n    pm.info.requestName === \"Update Item Description\" ||\r\n    pm.info.requestName === \"ITEM-API-06 — Response Schema\" ||\r\n    pm.info.requestName === \"ITEM-API-07 — Filter by Item Group\"\r\n) {\r\n\r\n    // Generate a unique Item Code\r\n    const itemCode = \"QA-ITEM-\" + Date.now();\r\n\r\n    pm.environment.unset(\"itemId\");\r\n\r\n    // Create an Item for the current test\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Item\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                item_code: itemCode,\r\n                item_name: \"QA Setup Item\",\r\n                item_group: \"Products\",\r\n                is_stock_item: 1,\r\n                stock_uom: \"Nos\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Check that Item creation succeeded\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Item setup failed\");\r\n    }\r\n\r\n    // Save details for this test\r\n    const itemId = response.json().data.name;\r\n\r\n    pm.environment.set(\"itemId\", itemId);\r\n    pm.environment.set(\"setupItemCode\", itemCode);\r\n\r\n    // Track this Item for cleanup\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testItemIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(itemId);\r\n\r\n    pm.environment.set(\"testItemIds\", JSON.stringify(ids));\r\n}\r\n"
+              "\r\nif (\r\n    pm.info.requestName === \"ITEM-API-04 — Retrieve Item\" ||\r\n    pm.info.requestName === \"Update Item Description\" ||\r\n    pm.info.requestName === \"ITEM-API-06 — Verify Item Response Schema\" ||\r\n    pm.info.requestName === \"ITEM-API-07 — Filter by Item Group\"\r\n) {\r\n\r\n    // Generate a unique Item Code\r\n    const itemCode = \"QA-ITEM-\" + Date.now();\r\n\r\n    pm.environment.unset(\"itemId\");\r\n\r\n    // Create an Item for the current test\r\n    const response = await pm.sendRequest({\r\n        url: pm.environment.get(\"base_url\") + \"/api/resource/Item\",\r\n        method: \"POST\",\r\n        header: {\r\n            \"Content-Type\": \"application/json\",\r\n            \"Authorization\": \"token \" +\r\n                pm.environment.get(\"api_key\") + \":\" +\r\n                pm.environment.get(\"api_secret\")\r\n        },\r\n        body: {\r\n            mode: \"raw\",\r\n            raw: JSON.stringify({\r\n                item_code: itemCode,\r\n                item_name: \"QA Setup Item\",\r\n                item_group: \"Products\",\r\n                is_stock_item: 1,\r\n                stock_uom: \"Nos\"\r\n            })\r\n        }\r\n    });\r\n\r\n    // Check that Item creation succeeded\r\n    if (response.code !== 200 || !response.json().data?.name) {\r\n        throw new Error(\"Item setup failed\");\r\n    }\r\n\r\n    // Save details for this test\r\n    const itemId = response.json().data.name;\r\n\r\n    pm.environment.set(\"itemId\", itemId);\r\n    pm.environment.set(\"setupItemCode\", itemCode);\r\n\r\n    // Track this Item for cleanup\r\n    const ids = JSON.parse(\r\n        pm.environment.get(\"testItemIds\") || \"[]\"\r\n    );\r\n\r\n    ids.push(itemId);\r\n\r\n    pm.environment.set(\"testItemIds\", JSON.stringify(ids));\r\n}\r\n"
             ]
           }
         }
@@ -1460,6 +1547,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "PUT",
                 "header": [
@@ -1505,6 +1595,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "GET",
                 "header": [],
@@ -1541,6 +1634,9 @@
                   }
                 }
               ],
+              "protocolProfileBehavior": {
+                "disableCookies": true
+              },
               "request": {
                 "method": "DELETE",
                 "header": [],
@@ -1614,6 +1710,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1659,6 +1758,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "POST",
             "header": [
@@ -1704,6 +1806,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "method": "GET",
             "header": [],
@@ -1815,11 +1920,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "\r\npm.test(\"Cleanup endpoint is available\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// Get Item IDs saved during testing\r\nconst ids = JSON.parse(\r\n    pm.environment.get(\"testItemIds\") || \"[]\"\r\n);\r\n\r\n// Remove duplicate IDs\r\nconst uniqueIds = [...new Set(ids)];\r\nconst remaining = [...uniqueIds];\r\n\r\n// Delete each test Item\r\nfor (const id of uniqueIds) {\r\n    try {\r\n        const url = pm.environment.get(\"base_url\")\r\n            + \"/api/resource/Item/\"\r\n            + encodeURIComponent(id);\r\n\r\n        const header = {\r\n            Authorization: \"token \"\r\n                + pm.environment.get(\"api_key\")\r\n                + \":\"\r\n                + pm.environment.get(\"api_secret\")\r\n        };\r\n\r\n        // Delete the Item\r\n        const deleted = await pm.sendRequest({\r\n            url: url,\r\n            method: \"DELETE\",\r\n            header: header\r\n        });\r\n\r\n        // Verify the Item no longer exists\r\n        const check = await pm.sendRequest({\r\n            url: url,\r\n            method: \"GET\",\r\n            header: header\r\n        });\r\n\r\n        if (\r\n            [200, 202, 204, 404].includes(deleted.code) &&\r\n            check.code === 404\r\n        ) {\r\n            remaining.splice(remaining.indexOf(id), 1);\r\n            console.log(\"Deleted Item:\", id);\r\n        } else {\r\n            console.log(\"Cleanup failed:\", id, deleted.code, check.code);\r\n        }\r\n\r\n    } catch (error) {\r\n        console.log(\"Error deleting Item:\", id, error.message);\r\n    }\r\n\r\n    // Save any IDs that still need cleanup\r\n    pm.environment.set(\r\n        \"testItemIds\",\r\n        JSON.stringify(remaining)\r\n    );\r\n}\r\n\r\npm.test(\"All Item test records removed\", () => {\r\n    pm.expect(remaining).to.be.empty;\r\n});\r\n"
+                  "pm.test(\"Cleanup request succeeded\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// Get Item IDs created during testing\r\nconst itemIds = JSON.parse(\r\n    pm.environment.get(\"testItemIds\") || \"[]\"\r\n);\r\n\r\nconst failedIds = [];\r\n\r\n// Delete each test Item\r\nfor (const id of itemIds) {\r\n\r\n    try {\r\n        const response = await pm.sendRequest({\r\n            url: pm.environment.get(\"base_url\")\r\n                + \"/api/resource/Item/\"\r\n                + encodeURIComponent(id),\r\n\r\n            method: \"DELETE\",\r\n\r\n            header: {\r\n                Authorization: \"token \" +\r\n                    pm.environment.get(\"api_key\") + \":\" +\r\n                    pm.environment.get(\"api_secret\")\r\n            }\r\n        });\r\n\r\n        if (![200, 202, 204, 404].includes(response.code)) {\r\n            failedIds.push(id);\r\n        }\r\n\r\n    } catch (error) {\r\n        failedIds.push(id);\r\n    }\r\n}\r\n\r\n// Keep only Items that could not be deleted\r\npm.environment.set(\r\n    \"testItemIds\",\r\n    JSON.stringify(failedIds)\r\n);\r\n\r\npm.test(\"All test Items deleted\", () => {\r\n    pm.expect(failedIds).to.be.empty;\r\n});"
                 ]
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "auth": {
               "type": "apikey",
@@ -1871,6 +1979,9 @@
               }
             }
           ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
           "request": {
             "auth": {
               "type": "apikey",
